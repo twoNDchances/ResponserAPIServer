@@ -1,0 +1,10 @@
+- name: First Apply IPTables Playbook
+  hosts: firewall
+  become: yes
+  gather_facts: no
+  tasks:
+    - name: iptables first apply playbook
+      shell: iptables -t filter -I DOCKER-USER -s "{{ source_ip }}" -p tcp --dport 80 -m hashlimit --hashlimit-name "{{ hashlimit_name }}" --hashlimit-above "{{ packet_nums }}"/"{{ duration_type }}" --hashlimit-burst "{{ burst }}" --hashlimit-htable-expire 30000 -j DROP
+
+    - name: iptables first cancel playbook
+      shell: echo "iptables -t filter -D DOCKER-USER -s {{ source_ip }} -p tcp --dport 80 -m hashlimit --hashlimit-name {{ hashlimit_name }} --hashlimit-above {{ packet_nums }}/{{ duration_type }} --hashlimit-burst {{ burst }} --hashlimit-htable-expire 30000 -j DROP" | at now + "{{ limit_duration_minutes }}" minutes

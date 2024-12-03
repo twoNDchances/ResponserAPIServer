@@ -1,0 +1,18 @@
+=== Python modules ===
+flask
+flask_restful
+flask_cors
+elasticsearch
+ansible_runner
+json
+os
+uuid
+shutil
+ipaddress
+
+=== System APT ===
+sshpass
+ansible
+
+=== System target ===
+at

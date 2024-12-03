@@ -1,0 +1,10 @@
+- name: Delete Mod Security Playbook
+  hosts: firewall
+  become: yes
+  gather_facts: no
+  tasks:
+    - name: modsec delete playbook
+      shell: rm -r {{ secrule_file }}.conf
+
+    - name: modsec apply change playbook
+      shell: docker container exec -it "{{ modsec_container_name }}" /bin/bash -c "nginx -s reload"

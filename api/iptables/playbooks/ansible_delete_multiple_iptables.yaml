@@ -1,0 +1,8 @@
+- name: Delete IPTables Playbook
+  hosts: firewall
+  become: yes
+  gather_facts: no
+  tasks:
+    - name: iptables delete playbook
+      shell: iptables -t filter -D DOCKER-USER -s "{{ item }}" -j DROP
+      loop: "{{ ip_list }}"

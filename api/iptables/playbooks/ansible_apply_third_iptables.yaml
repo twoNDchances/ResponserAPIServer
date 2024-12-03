@@ -1,0 +1,7 @@
+- name: Third Apply IPTables Playbook
+  hosts: firewall
+  become: yes
+  gather_facts: no
+  tasks:
+    - name: iptables third apply playbook
+      shell: iptables -t filter -I DOCKER-USER -s "{{ source_ip }}" -j DROP

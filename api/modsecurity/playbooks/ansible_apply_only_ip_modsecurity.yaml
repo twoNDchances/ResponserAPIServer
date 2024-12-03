@@ -1,0 +1,33 @@
+- name: Only IP Apply Mod Security Playbook
+  hosts: firewall
+  become: yes
+  gather_facts: no
+  tasks:
+    - name: modsec create ip playbook for change anomaly score and paranoia level
+      shell: echo "SecRule REMOTE_ADDR \"@ipMatch {{ secrule_ip }}\" \"id:{{ secrule_id }},phase:1,setvar:'tx.inbound_anomaly_score_threshold={{ secrule_anomaly_score }}',setvar:'tx.blocking_paranoia_level={{ secrule_paranoia_level }}',setvar:'tx.detection_paranoia_level=%{TX.blocking_paranoia_level}'\"" >> {{ secrule_file }}.conf
+
+    # - name: modsec apply change playbook
+    #   shell: docker container exec -it "{{ modsec_container_name }}" /bin/bash -c "nginx -s reload"
+
+    - block:
+        - name: modsec apply change playbook
+          shell: docker container exec -it "{{ modsec_container_name }}" /bin/bash -c "nginx -s reload"
+          register: task_result
+          ignore_errors: yes
+        
+        - name: check if task failed
+          fail:
+            msg: "Task failed with error: {{ task_result.stdout }}"
+          when: task_result.failed
+
+      rescue:
+        - name: delete secrule file if error
+          shell: rm -rf {{ secrule_file }}.conf
+        
+        - name: apply change again
+          shell: docker container exec -it "{{ modsec_container_name }}" /bin/bash -c "nginx -s reload"
+        
+        - name:
+          fail:
+            msg: "{{ ansible_failed_result.msg }}"
+

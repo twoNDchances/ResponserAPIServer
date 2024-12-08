@@ -308,12 +308,16 @@ def modsecurity_responser_endpoint(responser_name: str):
         )
         if rabbitmq_respose.status_code != 200:
             return {
-
-            }
+                'type': 'modsecurity_responser',
+                'data': None,
+                'reason': f'InternalServerError: Check health RabbitMQ fail with status code {rabbitmq_respose.status_code}'
+            }, 500
     except:
         return {
-
-        }
+            'type': 'modsecurity_responser',
+            'data': None,
+            'reason': f'InternalServerError: Can\'t perform request GET for healthcheck RabbitMQ'
+        }, 500
     connection = BlockingConnection(
         ConnectionParameters(
             host=RABBITMQ_HOST, 
@@ -342,7 +346,20 @@ def modsecurity_responser_endpoint(responser_name: str):
                 'hashed_rule': sha512(string=replace_important_chars(string=full_regex).encode()).hexdigest(),
                 'hashed_payload': sha512(string=root_cause_value.encode()).hexdigest()
             },
-            'payload': request_body,
+            'payload': request_body
+        }
+    if getted_ip_address is False and getted_rule is True and getted_payload is True:
+        secrule_processor = {
+            'responser_name': responser_name,
+            'type': 'full',
+            'details': {
+                'ip': None,
+                'rule': replace_important_chars(string=full_regex),
+                'payload': root_cause_value,
+                'hashed_rule': sha512(string=replace_important_chars(string=full_regex).encode()).hexdigest(),
+                'hashed_payload': sha512(string=root_cause_value.encode()).hexdigest()
+            },
+            'payload': request_body
         }
     if getted_ip_address is False and getted_rule is False and getted_payload is True:
         secrule_processor = {
@@ -355,7 +372,7 @@ def modsecurity_responser_endpoint(responser_name: str):
                 'hashed_rule': None,
                 'hashed_payload': sha512(string=root_cause_value.encode()).hexdigest()
             },
-            'payload': request_body,
+            'payload': request_body
         }
     if getted_ip_address is True and getted_rule is False and getted_payload is False:
         secrule_processor = {
@@ -372,7 +389,7 @@ def modsecurity_responser_endpoint(responser_name: str):
                 'hashed_rule': None,
                 'hashed_payload': None
             },
-            'payload': request_body,
+            'payload': request_body
         }
     if getted_ip_address is True and getted_rule is True and getted_payload is False:
         secrule_processor = {
@@ -389,7 +406,7 @@ def modsecurity_responser_endpoint(responser_name: str):
                 'hashed_rule': sha512(string=replace_important_chars(string=regex_value.pattern).encode()).hexdigest(),
                 'hashed_payload': None
             },
-            'payload': request_body,
+            'payload': request_body
         }
     if getted_ip_address is False and getted_rule is True and getted_payload is False:
         secrule_processor = {
@@ -402,7 +419,7 @@ def modsecurity_responser_endpoint(responser_name: str):
                 'hashed_rule': sha512(string=replace_important_chars(string=regex_value.pattern).encode()).hexdigest(),
                 'hashed_payload': None
             },
-            'payload': request_body,
+            'payload': request_body
         }
     if getted_ip_address is True and getted_rule is False and getted_payload is True:
         secrule_processor = {
@@ -419,7 +436,7 @@ def modsecurity_responser_endpoint(responser_name: str):
                 'hashed_rule': None,
                 'hashed_payload': sha512(string=root_cause_value.encode()).hexdigest()
             },
-            'payload': request_body,
+            'payload': request_body
         }
     channel.basic_publish(exchange='', routing_key=RABBITMQ_QUEUE_NAME, body=dumps(secrule_processor))
     connection.close()

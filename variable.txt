@@ -10,6 +10,8 @@ export BACKEND_DEFAULT_SWARM="192.168.1.7"
 
 export ANSIBLE_DATA_DIR="/root/Responsers/config/."
 export ANSIBLE_INVENTORY="/root/Responsers/config/hosts"
+export ANSIBLE_CRS_PATH_DIR="/home/cxt/nginx/modsec_rule_testing/rules"
+export ANSIBLE_MODSEC_CONAME="modsec"
 export ANSIBLE_FIREWALL_USERNAME="root"
 export ANSIBLE_FIREWALL_PW="cxt"
 export ANSIBLE_SWARM_USERNAME=""

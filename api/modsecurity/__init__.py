@@ -351,7 +351,7 @@ def modsecurity_responser_endpoint(responser_name: str):
     if getted_ip_address is False and getted_rule is True and getted_payload is True:
         secrule_processor = {
             'responser_name': responser_name,
-            'type': 'full',
+            'type': 'onlyRegexAndPayload',
             'details': {
                 'ip': None,
                 'rule': replace_important_chars(string=full_regex),

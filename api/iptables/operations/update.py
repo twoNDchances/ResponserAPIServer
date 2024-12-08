@@ -184,7 +184,12 @@ class IPTablesModifications(Resource):
             'data': {
                 'id': iptable['_id'],
                 'responser_name': responser_name,
-                'responser_configuration': responser_configuration
+                'is_enabled': is_enabled_configuration,
+                'target_ip_field': target_ip_field,
+                'is_ruthless': is_ruthless,
+                'limit_duration_minutes': limit_duration_minutes,
+                'block_duration_minutes': block_duration_minutes,
+                'advanced': is_enabled,
             },
             'reason': 'Success'
         }

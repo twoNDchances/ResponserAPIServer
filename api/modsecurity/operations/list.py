@@ -52,6 +52,7 @@ class ModSecurityExecutionLists(Resource):
             'data': [{
                 'id': modsecurity_execution['_id'],
                 'responser_name': modsecurity_execution['_source']['responser_name'],
+                'status': modsecurity_execution['_source']['status'],
                 'secrule_id': modsecurity_execution['_source']['secrule_id'],
                 'type': modsecurity_execution['_source']['type'],
                 'for': modsecurity_execution['_source']['for'],

@@ -88,19 +88,20 @@ class ModSecurityModifications(Resource):
                 'reason': 'NotAcceptable: "paranoia_level" must in [1, 2, 3, 4] and "anomaly_score" must greater than 0'
             }, 406
         payload_is_used = payload.get('is_used')
+        based_payload = payload.get('based_payload')
         regex_field = payload.get('regex_field')
         root_cause_field = payload.get('root_cause_field')
-        if payload_is_used is None or not all([regex_field, root_cause_field]):
+        if payload_is_used is None or based_payload is None or not all([regex_field, root_cause_field]):
             return {
                 'type': 'modsecurity',
                 'data': None,
-                'reason': 'BadRequest: Missing requirement fields from "payload" ["is_used", "regex_field", "root_cause_field"]'
+                'reason': 'BadRequest: Missing requirement fields from "payload" ["is_used", "based_payload", "regex_field", "root_cause_field"]'
             }, 400
-        if not isinstance(payload_is_used, bool) or not isinstance(regex_field, str) or not isinstance(root_cause_field, str):
+        if not isinstance(payload_is_used, bool) or not isinstance(based_payload, bool) or not isinstance(regex_field, str) or not isinstance(root_cause_field, str):
             return {
                 'type': 'modsecurity',
                 'data': None,
-                'reason': 'NotAcceptable: Invalid datatype ["is_used" => (boolean), "regex_field" => (string), "root_cause_field" => (string)]'
+                'reason': 'NotAcceptable: Invalid datatype ["is_used" => (boolean), "based_payload" => (boolean), "regex_field" => (string), "root_cause_field" => (string)]'
             }, 406
         advanced_is_enabled = advanced.get('is_enabled')
         threshold = advanced.get('threshold')
@@ -173,7 +174,11 @@ class ModSecurityModifications(Resource):
             'data': {
                 'id': modsecurity['_id'],
                 'responser_name': responser_name,
-                'responser_configuration': responser_configuration
+                'responser_configuration': responser_configuration,
+                'is_enabled': is_enabled_configuration,
+                'ip_address': ip_address_is_used,
+                'payload': payload_is_used,
+                'advanced': advanced_is_enabled,
             },
             'reason': 'Success'
         }

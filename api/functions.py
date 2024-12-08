@@ -1,7 +1,5 @@
 from ansible_runner import run
 import re
-import uuid
-from .storage import ANSIBLE_DATA_DIR, ANSIBLE_INVENTORY, ANSIBLE_MODSEC_CONAME, ANSIBLE_FIREWALL_USERNAME, ANSIBLE_FIREWALL_PASSWORD, ANSIBLE_CRS_PATH_DIR
 
 
 def parse_path(path: str) -> list[str] | str | None:
@@ -104,26 +102,18 @@ def generate_full_regex(text, sub_regex):
     return f"{modifier}{full_regex}"
 
 
-# def delete_secrule_file(extra_vars: dict):
-#     runner = run(
-#         private_data_dir=ANSIBLE_DATA_DIR,
-#         playbook='../api/modsecurity/playbooks/ansible_apply_only_ip_payload_modsecurity.yaml',
-#         inventory=ANSIBLE_INVENTORY,
-#         extravars={
-#             'username_firewall_node': ANSIBLE_FIREWALL_USERNAME,
-#             'password_firewall_node': ANSIBLE_FIREWALL_PASSWORD,
-#             'secrule_anomaly_score': ip_address.get('anomaly_score'),
-#             'secrule_paranoia_level': ip_address.get('paranoia_level'),
-#             'secrule_payload': root_cause_value.replace('\"', '\\\"'),
-#             'secrule_id_ip': id_for_secrule_ip,
-#             'secrule_id_chain': id_for_secrule_chain,
-#             'secrule_ip': ip_source_value,
-#             'secrule_file': f'{ANSIBLE_CRS_PATH_DIR}/REQUEST-{id_for_secrule_ip}-{id_for_secrule_chain}-{unique_id_onlyIPAndPayload_forever}',
-#             'modsec_container_name': ANSIBLE_MODSEC_CONAME
-#         },
-#         host_pattern='firewall',
-#         json_mode=True,
-#         quiet=True,
-#         ident=uuid.uuid4()
-#     )
-#     return True
+def find_missing_or_next(numbers: list) -> list[int] | int:
+    full_range = range(1, numbers[-1] + 1)
+    missing_numbers = list(set(full_range) - set(numbers))
+    if missing_numbers:
+        if missing_numbers.__len__() == 1:
+            return missing_numbers + [numbers[-1] + 1]
+        return missing_numbers
+    else:
+        next_number = max(numbers) + 1
+        return next_number
+
+
+def replace_important_chars(string: str):
+    return string.replace('\\\\"', '@dbquote@').replace('"', '@dbquote@').replace('\\b', '@backspace@').replace('`', '@backquote@').replace(';', '@semicolon@').replace("'", '@sgquote@').replace('$', '@dollar@')
+

@@ -17,7 +17,7 @@ class ModSecurityManifests(Resource):
                 'reason': 'BadRequest: ID is required'
             }, 400
         try:
-            iptable = response_elasticsearch.get(index='responser-modsecurity', id=id).raw
+            modsecurity = response_elasticsearch.get(index='responser-modsecurity', id=id).raw
         except:
             return {
                 'type': 'modsecurity',
@@ -27,9 +27,9 @@ class ModSecurityManifests(Resource):
         return {
             'type': 'modsecurity',
             'data': {
-                'id': iptable['_id'],
-                'responser_name': iptable['_source']['responser_name'],
-                'responser_configuration': iptable['_source']['responser_configuration']
+                'id': modsecurity['_id'],
+                'responser_name': modsecurity['_source']['responser_name'],
+                'responser_configuration': modsecurity['_source']['responser_configuration']
             },
             'reason': 'Success'
         }
@@ -57,8 +57,9 @@ class ModSecurityPayloadManifests(Resource):
                 'data': None,
                 'reason': 'NotFound'
             }, 404
+        data = payload['_source']['payload'].replace('<', '$lt').replace('>', '$gt')
         return {
             'type': 'modsecurity',
-            'data': payload['_source']['payload'],
+            'data': data,
             'reason': 'Success'
         }

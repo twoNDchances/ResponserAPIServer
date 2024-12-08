@@ -1,8 +1,11 @@
-- name: Delete Mod Security Playbook
+- name: Check Mod Security Playbook
   hosts: firewall
   become: yes
   gather_facts: no
   tasks:
+    - name: ping for testing
+      ping:
+    
     - name: get container name
       shell: docker ps -a --filter "name=^/{{ modsec_container_name }}$" --format "{{ '{{.Status}}' }}"
       register: container_check
@@ -17,15 +20,3 @@
       fail:
         msg: "Container '{{ modsec_container_name }}' exists but is not running."
       when: "'Up' not in container_check.stdout"
-
-    - block:
-        - name: modsec delete playbook
-          shell: rm -r {{ secrule_file }}.conf
-          ignore_errors: yes
-
-      rescue:
-        - name: do nothing
-          shell: echo "done"
-
-    - name: modsec apply change playbook
-      shell: docker container exec -it "{{ modsec_container_name }}" /bin/bash -c "nginx -s reload"

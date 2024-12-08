@@ -69,8 +69,27 @@ class ModSecurityExecutionTerminations(Resource):
             return {
                 'type': 'modsecurity',
                 'data': None,
-                'reason': 'BadRequest: ID is required'
+                'reason': 'BadRequest: ID is required, or must in ["error", "duplicated"]'
             }, 400
+        if id in ['error', 'duplicated']:
+            modsecurity_executions = response_elasticsearch.search(index='responser-modsecurity-executions', query={
+                'term': {
+                    'status.keyword': id
+                }
+            }, size=ES_MAX_RESULT).raw['hits']['hits']
+            if modsecurity_executions.__len__() > 0:
+                response_elasticsearch.delete_by_query(index='responser-modsecurity-executions', query={
+                    'term': {
+                        'status.keyword': id
+                    }
+                })
+            return {
+                'type': 'modsecurity',
+                'data': [
+                    modsecurity_execution_id['_id'] for modsecurity_execution_id in modsecurity_executions
+                ],
+                'reason': 'Success'
+            }
         try:
             modsecurity_execution = response_elasticsearch.get(index='responser-modsecurity-executions', id=id).raw
         except:
@@ -83,33 +102,37 @@ class ModSecurityExecutionTerminations(Resource):
         unique_id = uuid4()
         if modsecurity_execution['_source']['relationship'] is None:
             data = [{'id': modsecurity_execution['_id']}]
-            delete_single_runner = run(
-                private_data_dir=ANSIBLE_DATA_DIR,
-                playbook='../api/modsecurity/playbooks/ansible_delete_modsecurity.yaml',
-                inventory=ANSIBLE_INVENTORY,
-                extravars={
-                    'username_firewall_node': ANSIBLE_FIREWALL_USERNAME,
-                    'password_firewall_node': ANSIBLE_FIREWALL_PASSWORD,
-                    'secrule_file': f'{ANSIBLE_CRS_PATH_DIR}/REQUEST-{modsecurity_execution["_source"]["secrule_id"]}-*',
-                    'modsec_container_name': ANSIBLE_MODSEC_CONAME
-                },
-                host_pattern='firewall',
-                json_mode=True,
-                quiet=True,
-                ident=unique_id
-            )
-            error_message = None
-            for event in delete_single_runner.events:
-                if event.get('event') == 'runner_on_unreachable':
-                    error_message = event['stdout']
-                    break
-            if delete_single_runner.status == 'failed':
-                rmtree(path=f'{ANSIBLE_DATA_DIR.replace('.', '')}artifacts/{unique_id}', ignore_errors=True)
-                return {
-                    'type': 'modsecurity',
-                    'data': None,
-                    'reason': 'InternalServerError' if error_message is None else f'InternalServerError: {error_message}'
-                }
+            if modsecurity_execution['_source']['status'] == 'running':
+                delete_single_runner = run(
+                    private_data_dir=ANSIBLE_DATA_DIR,
+                    playbook='../api/modsecurity/playbooks/ansible_delete_modsecurity.yaml',
+                    inventory=ANSIBLE_INVENTORY,
+                    extravars={
+                        'username_firewall_node': ANSIBLE_FIREWALL_USERNAME,
+                        'password_firewall_node': ANSIBLE_FIREWALL_PASSWORD,
+                        'secrule_file': f'{ANSIBLE_CRS_PATH_DIR}/REQUEST-{modsecurity_execution["_source"]["secrule_id"]}-*',
+                        'modsec_container_name': ANSIBLE_MODSEC_CONAME
+                    },
+                    host_pattern='firewall',
+                    json_mode=True,
+                    quiet=True,
+                    ident=unique_id
+                )
+                error_message = None
+                for event in delete_single_runner.events:
+                    if event.get('event') == 'runner_on_unreachable':
+                        error_message = event['stdout']
+                        break
+                    if event.get('event') == 'runner_on_failed':
+                        error_message = event['stdout']
+                        break
+                if delete_single_runner.status == 'failed':
+                    rmtree(path=f'{ANSIBLE_DATA_DIR.replace('.', '')}artifacts/{unique_id}', ignore_errors=True)
+                    return {
+                        'type': 'modsecurity',
+                        'data': None,
+                        'reason': 'InternalServerError' if error_message is None else f'InternalServerError: {error_message}'
+                    }, 500
             response_elasticsearch.delete(index='responser-modsecurity-executions', id=modsecurity_execution['_id'])
         else:
             try:
@@ -130,33 +153,45 @@ class ModSecurityExecutionTerminations(Resource):
                 {'id': modsecurity_execution['_id']},
                 {'id': modsecurity_execution_relationship['_id']}
             ]
-            delete_multiple_runner = run(
-                private_data_dir=ANSIBLE_DATA_DIR,
-                playbook='../api/modsecurity/playbooks/ansible_delete_modsecurity.yaml',
-                inventory=ANSIBLE_INVENTORY,
-                extravars={
-                    'username_firewall_node': ANSIBLE_FIREWALL_USERNAME,
-                    'password_firewall_node': ANSIBLE_FIREWALL_PASSWORD,
-                    'secrule_file': f'{ANSIBLE_CRS_PATH_DIR}/REQUEST-{modsecurity_execution["_source"]["secrule_id"] if modsecurity_execution["_source"]["for"] == "ip" else modsecurity_execution_relationship["_source"]["secrule_id"]}-{modsecurity_execution_relationship["_source"]["secrule_id"] if modsecurity_execution_relationship["_source"]["for"] == 'chain' else modsecurity_execution["_source"]["secrule_id"]}-*',
-                    'modsec_container_name': ANSIBLE_MODSEC_CONAME
-                },
-                host_pattern='firewall',
-                json_mode=True,
-                quiet=True,
-                ident=unique_id
-            )
-            error_message = None
-            for event in delete_multiple_runner.events:
-                if event.get('event') == 'runner_on_unreachable':
-                    error_message = event['stdout']
-                    break
-            if delete_multiple_runner.status == 'failed':
-                rmtree(path=f'{ANSIBLE_DATA_DIR.replace('.', '')}artifacts/{unique_id}', ignore_errors=True)
-                return {
-                    'type': 'modsecurity',
-                    'data': None,
-                    'reason': 'InternalServerError' if error_message is None else f'InternalServerError: {error_message}'
-                }
+            if modsecurity_execution_relationship['_source']['status'] == 'running' and modsecurity_execution['_source']['status'] == 'running':
+                delete_multiple_runner = run(
+                    private_data_dir=ANSIBLE_DATA_DIR,
+                    playbook='../api/modsecurity/playbooks/ansible_delete_modsecurity.yaml',
+                    inventory=ANSIBLE_INVENTORY,
+                    extravars={
+                        'username_firewall_node': ANSIBLE_FIREWALL_USERNAME,
+                        'password_firewall_node': ANSIBLE_FIREWALL_PASSWORD,
+                        'secrule_file': f'{ANSIBLE_CRS_PATH_DIR}/REQUEST-{(
+                            modsecurity_execution["_source"]["secrule_id"] 
+                            if modsecurity_execution["_source"]["for"] == "ip" 
+                            else modsecurity_execution_relationship["_source"]["secrule_id"]
+                        )}-{(
+                            modsecurity_execution_relationship["_source"]["secrule_id"] 
+                            if modsecurity_execution_relationship["_source"]["for"] == 'chain' 
+                            else modsecurity_execution["_source"]["secrule_id"]
+                        )}-*',
+                        'modsec_container_name': ANSIBLE_MODSEC_CONAME
+                    },
+                    host_pattern='firewall',
+                    json_mode=True,
+                    quiet=True,
+                    ident=unique_id
+                )
+                error_message = None
+                for event in delete_multiple_runner.events:
+                    if event.get('event') == 'runner_on_unreachable':
+                        error_message = event['stdout']
+                        break
+                    if event.get('event') == 'runner_on_failed':
+                        error_message = event['stdout']
+                        break
+                if delete_multiple_runner.status == 'failed':
+                    rmtree(path=f'{ANSIBLE_DATA_DIR.replace('.', '')}artifacts/{unique_id}', ignore_errors=True)
+                    return {
+                        'type': 'modsecurity',
+                        'data': None,
+                        'reason': 'InternalServerError' if error_message is None else f'InternalServerError: {error_message}'
+                    }, 500
             response_elasticsearch.delete(index='responser-modsecurity-executions', id=modsecurity_execution['_id'])
             response_elasticsearch.delete(index='responser-modsecurity-executions', id=modsecurity_execution_relationship['_id'])
         rmtree(path=f'{ANSIBLE_DATA_DIR.replace('.', '')}artifacts/{unique_id}', ignore_errors=True)

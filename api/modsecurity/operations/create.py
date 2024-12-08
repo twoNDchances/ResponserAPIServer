@@ -2,9 +2,22 @@ from flask import request
 from flask_restful import Resource
 from ansible_runner import run
 from json import loads, dumps
-import uuid
+from requests import get
 import shutil
-from ...storage import response_elasticsearch, ES_MAX_RESULT, ANSIBLE_FIREWALL_USERNAME, ANSIBLE_FIREWALL_PASSWORD, ANSIBLE_DATA_DIR, ANSIBLE_INVENTORY
+import uuid
+from ...storage import (
+    response_elasticsearch, 
+    ES_MAX_RESULT, 
+    ANSIBLE_FIREWALL_USERNAME, 
+    ANSIBLE_FIREWALL_PASSWORD, 
+    ANSIBLE_DATA_DIR, 
+    ANSIBLE_INVENTORY,
+    ANSIBLE_MODSEC_CONAME,
+    RABBITMQ_HOST,
+    RABBITMQ_MANAGEMENT_PORT,
+    RABBITMQ_USERNAME,
+    RABBITMQ_PASSWORD
+)
 
 
 class ModSecurityCreation(Resource):
@@ -88,19 +101,20 @@ class ModSecurityCreation(Resource):
                 'reason': 'NotAcceptable: "paranoia_level" must in [1, 2, 3, 4] and "anomaly_score" must greater than 0'
             }, 406
         payload_is_used = payload.get('is_used')
+        based_payload = payload.get('based_payload')
         regex_field = payload.get('regex_field')
         root_cause_field = payload.get('root_cause_field')
-        if payload_is_used is None or not all([regex_field, root_cause_field]):
+        if payload_is_used is None or based_payload is None or not all([regex_field, root_cause_field]):
             return {
                 'type': 'modsecurity',
                 'data': None,
-                'reason': 'BadRequest: Missing requirement fields from "payload" ["is_used", "regex_field", "root_cause_field"]'
+                'reason': 'BadRequest: Missing requirement fields from "payload" ["is_used", "based_payload", "regex_field", "root_cause_field"]'
             }, 400
-        if not isinstance(payload_is_used, bool) or not isinstance(regex_field, str) or not isinstance(root_cause_field, str):
+        if not isinstance(payload_is_used, bool) or not isinstance(based_payload, bool) or not isinstance(regex_field, str) or not isinstance(root_cause_field, str):
             return {
                 'type': 'modsecurity',
                 'data': None,
-                'reason': 'NotAcceptable: Invalid datatype ["is_used" => (boolean), "regex_field" => (string), "root_cause_field" => (string)]'
+                'reason': 'NotAcceptable: Invalid datatype ["is_used" => (boolean), "based_payload" => (boolean), "regex_field" => (string), "root_cause_field" => (string)]'
             }, 406
         advanced_is_enabled = advanced.get('is_enabled')
         threshold = advanced.get('threshold')
@@ -129,34 +143,56 @@ class ModSecurityCreation(Resource):
                 'data': None,
                 'reason': 'NotAcceptable: "ip_address" or "payload" must be enabled'
             }, 406
+        try:
+            rabbitmq_response = get(
+                url=f'http://{RABBITMQ_HOST}:{RABBITMQ_MANAGEMENT_PORT}/api/healthchecks/node', 
+                auth=(
+                    RABBITMQ_USERNAME, 
+                    RABBITMQ_PASSWORD
+                )
+            )
+            if rabbitmq_response.status_code != 200:
+                return {
+                    'type': 'modsecurity',
+                    'data': None,
+                    'reason': f'InternalServerError: RabbitMQ healthcheck fail with HTTP status code {rabbitmq_response.status_code}'
+                }, 500
+        except:
+            return {
+                'type': 'modsecurity',
+                'data': None,
+                'reason': f'InternalServerError: Can\'t perform GET request to RabbitMQ for connection testing'
+            }, 500
         unique_id = uuid.uuid4()
         runner = run(
             private_data_dir=ANSIBLE_DATA_DIR,
-            module='ping',
+            playbook='../api/modsecurity/playbooks/ansible_check_modsecurity.yaml',
             inventory=ANSIBLE_INVENTORY,
             extravars={
                 'username_firewall_node': ANSIBLE_FIREWALL_USERNAME,
-                'password_firewall_node': ANSIBLE_FIREWALL_PASSWORD
+                'password_firewall_node': ANSIBLE_FIREWALL_PASSWORD,
+                'modsec_container_name': ANSIBLE_MODSEC_CONAME
             },
             host_pattern='firewall',
             json_mode=True,
             quiet=True,
             ident=unique_id
         )
-        if runner.rc != 0:
+        error_message = None
+        for event in runner.events:
+            if event.get('event') == 'runner_on_unreachable':
+                error_message = event['stdout']
+                break
+            if event.get('event') == 'runner_on_failed':
+                error_message = event['stdout']
+                break
+        if runner.status == 'failed':
+            shutil.rmtree(path=f'{ANSIBLE_DATA_DIR.replace('.', '')}artifacts/{unique_id}', ignore_errors=True)
             return {
                 'type': 'modsecurity',
                 'data': None,
-                'reason': 'InternalServerError: Perform test connection with Firewall Node fail'
+                'reason': 'InternalServerError' if error_message is None else f'InternalServerError: {error_message}'
             }, 500
-        for event in runner.events:
-            if event['event'] == 'runner_on_ok':
-                if event['event_data']['res']['ping'] != 'pong':
-                    return {
-                        'type': 'modsecurity',
-                        'data': None,
-                        'reason': 'InternalServerError: Test ping to Firewall Node fail'
-                    }, 500
         response_elasticsearch.index(index='responser-modsecurity', document={
             'responser_name': responser_name,
             'responser_configuration': dumps(responser_configuration)

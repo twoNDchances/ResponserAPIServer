@@ -14,17 +14,21 @@ if __name__ == '__main__':
         'BACKEND_PORT': 9948,
         'BACKEND_DEFAULT_FIREWALL': '192.168.1.14',
         'BACKEND_DEFAULT_SWARM': '192.168.1.7',
-        'ANSIBLE_DATA_DIR': '/root/Responsers/config/.',
-        'ANSIBLE_INVENTORY': '/root/Responsers/config/hosts',
         'ANSIBLE_FIREWALL_USERNAME': 'cxt',
         'ANSIBLE_FIREWALL_PASSWORD': 'cxt',
         'ANSIBLE_SWARM_USERNAME': '',
-        'ANSIBLE_SWARM_PASSWORD': ''
+        'ANSIBLE_SWARM_PASSWORD': '',
+        'RABBITMQ_HOST': 'rabbitmq',
+        'RABBITMQ_MANAGEMENT_PORT': 15672,
+        'RABBITMQ_OPERATION_PORT': 5672,
+        'RABBITMQ_QUEUE_NAME': 'modsecurity-rules',
+        'RABBITMQ_USERNAME': 'admin',
+        'RABBITMQ_PASSWORD': 'admin'
     }
     config = {variable: getenv(variable, default) for variable, default in environment_variables.items()}
     print('========== Environment Variable Configurations ==========')
     for variable, value in config.items():
-        if variable in ['ES_PASS', 'ANSIBLE_FIREWALL_PASSWORD', 'ANSIBLE_SWARM_PASSWORD']:
+        if variable in ['ES_PASS', 'ANSIBLE_FIREWALL_PASSWORD', 'ANSIBLE_SWARM_PASSWORD', 'RABBITMQ_PASSWORD']:
             print(f'{variable} = {"*" * value.__len__()}')
         else:
             print(f'{variable} = {value}')

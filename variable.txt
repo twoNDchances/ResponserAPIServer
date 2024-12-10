@@ -1,25 +1,25 @@
-export ES_HOST="http://192.168.1.14:9200"
+export ES_HOST="http://192.168.1.9:9200"
 export ES_USER="elastic"
 export ES_PASS="elastic"
 export ES_MAX_RESULT=1000000000
 
 export BACKEND_HOST="0.0.0.0"
 export BACKEND_PORT=9948
-export BACKEND_DEFAULT_FIREWALL="192.168.1.9"
+export BACKEND_DEFAULT_FIREWALL="192.168.1.6"
 export BACKEND_DEFAULT_SWARM="192.168.1.7"
 
 export ANSIBLE_DATA_DIR="/root/Responsers/config/."
 export ANSIBLE_INVENTORY="/root/Responsers/config/hosts"
 export ANSIBLE_CRS_PATH_DIR="/home/cxt/nginx/modsec_rule_testing/rules"
-export ANSIBLE_MODSEC_CONAME="modsec"
+export ANSIBLE_MODSEC_CONAME="modsecurity"
 export ANSIBLE_FIREWALL_USERNAME="root"
 export ANSIBLE_FIREWALL_PW="cxt"
 export ANSIBLE_SWARM_USERNAME=""
 export ANSIBLE_SWARM_PW=""
 
-export RABBITMQ_HOST="192.168.1.14"
+export RABBITMQ_HOST="192.168.1.9"
 export RABBITMQ_MANAGEMENT_PORT=15672
 export RABBITMQ_OPERATION_PORT=5672
-export RABBITMQ_QUEUE_NAME="modsecurity-rules"
+export RABBITMQ_QUEUE_NAME="modsecurity-raw"
 export RABBITMQ_USERNAME="admin"
 export RABBITMQ_PW="admin"

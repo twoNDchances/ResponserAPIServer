@@ -26,7 +26,7 @@ ENV ES_HOST="http://elasticsearch:9200" \
     RABBITMQ_HOST="rabbitmq" \
     RABBITMQ_MANAGEMENT_PORT=15672 \
     RABBITMQ_OPERATION_PORT=5672 \
-    RABBITMQ_QUEUE_NAME="modsecurity-rules" \
+    RABBITMQ_QUEUE_NAME="modsecurity-raw" \
     RABBITMQ_USERNAME="guest" \
     RABBITMQ_PW="guest"
 

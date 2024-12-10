@@ -1,11 +1,19 @@
+from time import sleep
 from api.storage import response_elasticsearch
 from gather import ES_MAX_RESULT
 
 
 def setup_elasticsearch():
     while True:
-        if response_elasticsearch.ping() is True:
-            break
+        try:
+            if response_elasticsearch.ping() is True:
+                break
+            print('[Info] Perform connection testing fail, retry after 5 seconds')
+            sleep(5)
+        except:
+            print('[Info] Perform connection testing fail, retry after 5 seconds')
+            sleep(5)
+            continue
     index_settings = {
         "settings": {
             "index": {

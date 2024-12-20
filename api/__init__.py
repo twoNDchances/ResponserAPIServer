@@ -4,6 +4,8 @@ from flask_cors import CORS
 
 from .iptables import iptables_main_blueprint, iptables_responser_blueprint
 from .modsecurity import modsecurity_main_blueprint, modsecurity_responser_blueprint
+from .swarm import swarm_main_blueprint, swarm_responser_blueprint
+from .resources import resources_main_blueprint
 
 from .storage import ES_USER, ES_PASS, reset_elasticsearch
 
@@ -83,6 +85,9 @@ def internal_server_error_page(error):
 
 application.register_blueprint(blueprint=iptables_main_blueprint, url_prefix='/api')
 application.register_blueprint(blueprint=modsecurity_main_blueprint, url_prefix='/api')
+application.register_blueprint(blueprint=swarm_main_blueprint, url_prefix='/api')
+application.register_blueprint(blueprint=resources_main_blueprint, url_prefix='/api')
 
 application.register_blueprint(blueprint=iptables_responser_blueprint)
 application.register_blueprint(blueprint=modsecurity_responser_blueprint)
+application.register_blueprint(blueprint=swarm_responser_blueprint)

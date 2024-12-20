@@ -1,2 +1,5 @@
 [firewall]
 firewall_node ansible_host="{{ lookup('env', 'BACKEND_DEFAULT_FIREWALL') }}" ansible_user="{{ username_firewall_node }}" ansible_ssh_pass="{{ password_firewall_node }}"
+
+[swarm]
+swarm_node ansible_host="{{ lookup('env', 'BACKEND_DEFAULT_SWARM') }}" ansible_user="{{ username_swarm_node }}" ansible_ssh_pass="{{ password_swarm_node }}"

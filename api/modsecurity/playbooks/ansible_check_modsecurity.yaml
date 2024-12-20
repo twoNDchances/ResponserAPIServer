@@ -3,9 +3,6 @@
   become: yes
   gather_facts: no
   tasks:
-    - name: ping for testing
-      ping:
-    
     - name: get container name
       shell: docker ps -a --filter "name=^/{{ modsec_container_name }}$" --format "{{ '{{.Status}}' }}"
       register: container_check

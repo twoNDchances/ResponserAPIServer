@@ -1,0 +1,1 @@
+{"event": "verbose", "uuid": "188f9ac7-01a3-481b-81e4-45d66558191b", "counter": 2, "stdout": "\u001b[1;35m(/root/Responsers/config), ignoring it as an ansible.cfg source. For more\u001b[0m", "start_line": 1, "end_line": 2, "runner_ident": "d4cefa77-4012-43a0-ad4c-db77f06f53e2", "created": "2024-12-21T04:12:15.879861+00:00"}

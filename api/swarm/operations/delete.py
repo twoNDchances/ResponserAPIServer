@@ -40,11 +40,6 @@ class SwarmTerminations(Resource):
                 'reason': 'NotFound'
             }, 404
         response_elasticsearch.delete(index='responser-swarm', id=swarm['hits']['hits'][0]['_id'])
-        response_elasticsearch.delete_by_query(index='responser-swarm-timestamps', query={
-            'term': {
-                'responser_name.keyword': responser_name
-            }
-        })
         response_elasticsearch.delete_by_query(index='responser-swarm-errorlogs', query={
             'term': {
                 'responser_name.keyword': responser_name

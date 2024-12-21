@@ -1,0 +1,57 @@
+iptables:
+  - responser_name: test
+    responser_configuration: |
+      {
+          "is_enabled": true,
+          "target_ip_field": "ip_root_cause",
+          "is_ruthless": false,
+          "limit_duration_minutes": 1,
+          "rate_limitation": {
+              "packet_nums": 3,
+              "duration_type": "m",
+              "burst": 1
+          },
+          "block_duration_minutes": 1,
+          "advanced": {
+              "is_enabled": false,
+              "threshold": 3,
+              "time_window_seconds": 30
+          }
+      }
+
+modsecurity:
+  - responser_name: test
+    responser_configuration: |
+      {
+          "is_enabled": true,
+          "ip_address": {
+              "is_used": true,
+              "ip_source_field": "ip_root_cause",
+              "paranoia_level": 2,
+              "anomaly_score": 4
+          },
+          "payload": {
+              "is_used": true,
+              "based_payload": false,
+              "regex_field": "payload.message.by_rule",
+              "root_cause_field": "payload.message.field_value"
+          },
+          "advanced": {
+              "is_enabled": false,
+              "threshold": 3,
+              "time_window_seconds": 30
+          }
+      }
+
+swarm:
+  - responser_name: web
+    current_nums: 1
+    responser_configuration: |
+      {
+          "is_enabled": true,
+          "scaling": {
+              "up_nums": 3,
+              "down_nums": 1,
+              "current_nums": 1
+          }
+      }

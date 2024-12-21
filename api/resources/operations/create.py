@@ -103,13 +103,14 @@ class ResourceCreations(Resource):
                 },
                 'others': [],
                 'passed': []
-            },
+            }
         }
         if iptables is not None:
             if not isinstance(iptables, list):
                 logs['iptables']['datatype'] = 'Wrong, must be (list)'
             else:
                 is_error = False
+                iptables_passed_list = []
                 for iptable in iptables:
                     responser_name = iptable.get('responser_name')
                     responser_configuration = self.normalize_string(text=iptable.get('responser_configuration'))
@@ -187,46 +188,49 @@ class ResourceCreations(Resource):
                     if not isinstance(is_enabled, bool) or not isinstance(threshold, int) or not isinstance(time_window_seconds, int):
                         logs['iptables']['validations']['responser_configuration'].append('Invalid datatype ["is_enabled" => (boolean), "threshold" => (integer), "time_window_seconds" => (integer)]')
                         continue
-                unique_id = uuid4()
-                runner = run(
-                    private_data_dir=ANSIBLE_DATA_DIR,
-                    module='ping',
-                    inventory=ANSIBLE_INVENTORY,
-                    extravars={
-                        'username_firewall_node': ANSIBLE_FIREWALL_USERNAME,
-                        'password_firewall_node': ANSIBLE_FIREWALL_PASSWORD
-                    },
-                    host_pattern='firewall',
-                    json_mode=True,
-                    quiet=True,
-                    ident=unique_id
-                )
-                error_message = None
-                for event in runner.events:
-                    if event.get('event') == 'runner_on_unreachable':
-                        error_message = event['stdout']
-                        break
-                    if event.get('event') == 'runner_on_failed':
-                        error_message = event['stdout']
-                        break
-                if runner.status == 'failed':
-                    rmtree(path=f'{ANSIBLE_DATA_DIR.replace('.', '')}artifacts/{unique_id}', ignore_errors=True)
-                    logs['iptables']['others'].append(error_message)
-                    is_error = True
-                if is_error is False:
-                    for iptable in iptables:
-                        responser_name = iptable.get('responser_name')
-                        responser_configuration = self.normalize_string(text=iptable.get('responser_configuration'))
-                        response_elasticsearch.index('responser-iptables', document={
-                            'responser_name': responser_name,
-                            'responser_configuration': responser_configuration
-                        }, refresh='wait_for')
-                        logs['iptables']['passed'].append(f'{responser_name}')
+                    iptables_passed_list.append(iptable)
+                if iptables_passed_list.__len__() > 0:
+                    unique_id = uuid4()
+                    runner = run(
+                        private_data_dir=ANSIBLE_DATA_DIR,
+                        module='ping',
+                        inventory=ANSIBLE_INVENTORY,
+                        extravars={
+                            'username_firewall_node': ANSIBLE_FIREWALL_USERNAME,
+                            'password_firewall_node': ANSIBLE_FIREWALL_PASSWORD
+                        },
+                        host_pattern='firewall',
+                        json_mode=True,
+                        quiet=True,
+                        ident=unique_id
+                    )
+                    error_message = None
+                    for event in runner.events:
+                        if event.get('event') == 'runner_on_unreachable':
+                            error_message = event['stdout']
+                            break
+                        if event.get('event') == 'runner_on_failed':
+                            error_message = event['stdout']
+                            break
+                    if runner.status == 'failed':
+                        rmtree(path=f'{ANSIBLE_DATA_DIR.replace('.', '')}artifacts/{unique_id}', ignore_errors=True)
+                        logs['iptables']['others'].append(error_message)
+                        is_error = True
+                    if is_error is False:
+                        for iptables_passed in iptables_passed_list:
+                            responser_name = iptables_passed.get('responser_name')
+                            responser_configuration = self.normalize_string(text=iptables_passed.get('responser_configuration'))
+                            response_elasticsearch.index(index='responser-iptables', document={
+                                'responser_name': responser_name,
+                                'responser_configuration': responser_configuration
+                            }, refresh='wait_for')
+                            logs['iptables']['passed'].append(f'{responser_name}')
         if modsecurity is not None:
             if not isinstance(modsecurity, list):
                 logs['modsecurity']['datatype'] = 'Wrong, must be (list)'
             else:
                 is_error = False
+                modsecurity_passed_list = []
                 for modsec in modsecurity:
                     responser_name = modsec.get('responser_name')
                     responser_configuration = self.normalize_string(text=modsec.get('responser_configuration'))
@@ -303,62 +307,65 @@ class ResourceCreations(Resource):
                     if ip_address_is_used is False and payload_is_used is False:
                         logs['modsecurity']['validations']['responser_configuration'].append('"ip_address" or "payload" must be enabled')
                         continue
-                try:
-                    rabbitmq_response = get(
-                        url=f'http://{RABBITMQ_HOST}:{RABBITMQ_MANAGEMENT_PORT}/api/healthchecks/node', 
-                        auth=(
-                            RABBITMQ_USERNAME, 
-                            RABBITMQ_PASSWORD
+                    modsecurity_passed_list.append(modsec)
+                if modsecurity_passed_list.__len__() > 0:
+                    try:
+                        rabbitmq_response = get(
+                            url=f'http://{RABBITMQ_HOST}:{RABBITMQ_MANAGEMENT_PORT}/api/healthchecks/node', 
+                            auth=(
+                                RABBITMQ_USERNAME, 
+                                RABBITMQ_PASSWORD
+                            )
                         )
-                    )
-                    if rabbitmq_response.status_code != 200:
-                        logs['modsecurity']['others'].append(f'RabbitMQ healthcheck fail with HTTP status code {rabbitmq_response.status_code}')
+                        if rabbitmq_response.status_code != 200:
+                            logs['modsecurity']['others'].append(f'RabbitMQ healthcheck fail with HTTP status code {rabbitmq_response.status_code}')
+                            is_error = True
+                    except:
+                        logs['modsecurity']['others'].append('Can\'t perform GET request to RabbitMQ for connection testing')
                         is_error = True
-                except:
-                    logs['modsecurity']['others'].append('Can\'t perform GET request to RabbitMQ for connection testing')
-                    is_error = True
-                if is_error is False:
-                    unique_id = uuid4()
-                    runner = run(
-                        private_data_dir=ANSIBLE_DATA_DIR,
-                        playbook='../api/modsecurity/playbooks/ansible_check_modsecurity.yaml',
-                        inventory=ANSIBLE_INVENTORY,
-                        extravars={
-                            'username_firewall_node': ANSIBLE_FIREWALL_USERNAME,
-                            'password_firewall_node': ANSIBLE_FIREWALL_PASSWORD,
-                            'modsec_container_name': ANSIBLE_MODSEC_CONAME
-                        },
-                        host_pattern='firewall',
-                        json_mode=True,
-                        quiet=True,
-                        ident=unique_id
-                    )
-                    error_message = None
-                    for event in runner.events:
-                        if event.get('event') == 'runner_on_unreachable':
-                            error_message = event['stdout']
-                            break
-                        if event.get('event') == 'runner_on_failed':
-                            error_message = event['stdout']
-                            break
-                    if runner.status == 'failed':
-                        rmtree(path=f'{ANSIBLE_DATA_DIR.replace('.', '')}artifacts/{unique_id}', ignore_errors=True)
-                        logs['modsecurity']['others'].append(error_message)
-                        is_error = True
-                if is_error is False:
-                    for modsec in modsecurity:
-                        responser_name = modsec.get('responser_name')
-                        responser_configuration = self.normalize_string(text=modsec.get('responser_configuration'))
-                        response_elasticsearch.index('responser-modsecurity', document={
-                            'responser_name': responser_name,
-                            'responser_configuration': responser_configuration
-                        }, refresh='wait_for')
-                        logs['modsecurity']['passed'].append(f'{responser_name}')
+                    if is_error is False:
+                        unique_id = uuid4()
+                        runner = run(
+                            private_data_dir=ANSIBLE_DATA_DIR,
+                            playbook='../api/modsecurity/playbooks/ansible_check_modsecurity.yaml',
+                            inventory=ANSIBLE_INVENTORY,
+                            extravars={
+                                'username_firewall_node': ANSIBLE_FIREWALL_USERNAME,
+                                'password_firewall_node': ANSIBLE_FIREWALL_PASSWORD,
+                                'modsec_container_name': ANSIBLE_MODSEC_CONAME
+                            },
+                            host_pattern='firewall',
+                            json_mode=True,
+                            quiet=True,
+                            ident=unique_id
+                        )
+                        error_message = None
+                        for event in runner.events:
+                            if event.get('event') == 'runner_on_unreachable':
+                                error_message = event['stdout']
+                                break
+                            if event.get('event') == 'runner_on_failed':
+                                error_message = event['stdout']
+                                break
+                        if runner.status == 'failed':
+                            rmtree(path=f'{ANSIBLE_DATA_DIR.replace('.', '')}artifacts/{unique_id}', ignore_errors=True)
+                            logs['modsecurity']['others'].append(error_message)
+                            is_error = True
+                    if is_error is False:
+                        for modsecurity_passed in modsecurity_passed_list:
+                            responser_name = modsecurity_passed.get('responser_name')
+                            responser_configuration = self.normalize_string(text=modsecurity_passed.get('responser_configuration'))
+                            response_elasticsearch.index(index='responser-modsecurity', document={
+                                'responser_name': responser_name,
+                                'responser_configuration': responser_configuration
+                            }, refresh='wait_for')
+                            logs['modsecurity']['passed'].append(f'{responser_name}')
         if swarm is not None:
             if not isinstance(swarm, list):
                 logs['swarm']['datatype'] = 'Wrong, must be (list)'
             else:
                 is_error = False
+                swarm_passed_list = []
                 for swm in swarm:
                     responser_name = swm.get('responser_name')
                     responser_configuration = self.normalize_string(text=swm.get('responser_configuration'))
@@ -419,75 +426,77 @@ class ResourceCreations(Resource):
                     if up_nums <= current_nums or down_nums >= up_nums or down_nums < current_nums:
                         logs['swarm']['validations']['responser_configuration'].append('"up_nums" must be greater than ["current_nums", "down_nums"] and "down_nums" must be greater than or equal ["current_nums"]')
                         continue
-                try:
-                    rabbitmq_response = get(
-                        url=f'http://{RABBITMQ_HOST}:{RABBITMQ_MANAGEMENT_PORT}/api/healthchecks/node', 
-                        auth=(
-                            RABBITMQ_USERNAME, 
-                            RABBITMQ_PASSWORD
-                        )
-                    )
-                    if rabbitmq_response.status_code != 200:
-                        logs['swarm']['others'].append(f'RabbitMQ healthcheck fail with HTTP status code {rabbitmq_response.status_code}')
-                        is_error = True
-                except:
-                    logs['swarm']['others'].append('Can\'t perform GET request to RabbitMQ for connection testing')
-                    is_error = True
-                if is_error is False:
+                    swarm_passed_list.append(swm)
+                if swarm_passed_list.__len__() > 0:
                     try:
-                        prometheus_response = PrometheusConnect(url=f'{PROMETHEUS_HOST}:{PROMETHEUS_PORT}', disable_ssl=True)
-                        if prometheus_response.check_prometheus_connection() is False:
-                            logs['swarm']['others'].append('Prometheus check connection fail')
+                        rabbitmq_response = get(
+                            url=f'http://{RABBITMQ_HOST}:{RABBITMQ_MANAGEMENT_PORT}/api/healthchecks/node', 
+                            auth=(
+                                RABBITMQ_USERNAME, 
+                                RABBITMQ_PASSWORD
+                            )
+                        )
+                        if rabbitmq_response.status_code != 200:
+                            logs['swarm']['others'].append(f'RabbitMQ healthcheck fail with HTTP status code {rabbitmq_response.status_code}')
                             is_error = True
                     except:
-                        logs['swarm']['others'].append('Can\'t perform check Prometheus for connection testing')
+                        logs['swarm']['others'].append('Can\'t perform GET request to RabbitMQ for connection testing')
                         is_error = True
-                if is_error is False:
-                    unique_id = uuid4()
-                    runner = run(
-                        private_data_dir=ANSIBLE_DATA_DIR,
-                        module='ping',
-                        inventory=ANSIBLE_INVENTORY,
-                        extravars={
-                            'username_swarm_node': ANSIBLE_SWARM_USERNAME,
-                            'password_swarm_node': ANSIBLE_SWARM_PASSWORD,
-                        },
-                        host_pattern='swarm',
-                        json_mode=True,
-                        quiet=True,
-                        ident=unique_id
-                    )
-                    error_message = None
-                    for event in runner.events:
-                        if event.get('event') == 'runner_on_unreachable':
-                            error_message = event['stdout']
-                            break
-                        if event.get('event') == 'runner_on_failed':
-                            error_message = event['stdout']
-                            break
-                    if runner.status == 'failed':
-                        rmtree(path=f'{ANSIBLE_DATA_DIR.replace('.', '')}artifacts/{unique_id}', ignore_errors=True)
-                        logs['swarm']['others'].append(error_message)
-                        is_error = True
-                if is_error is False:
-                    for swm in swarm:
-                        responser_name = swm.get('responser_name')
-                        responser_configuration = self.normalize_string(text=swm.get('responser_configuration'))
-                        current_nums = swm.get('current_nums')
-                        response_elasticsearch.index('responser-swarm', document={
-                            'responser_name': responser_name,
-                            'responser_configuration': responser_configuration,
-                            'current_nums': current_nums
-                        }, refresh='wait_for')
-                        response_elasticsearch.index('responser-swarm-executions', document={
-                            'responser_name': responser_name,
-                            'status': 'down',
-                            'at_time': None,
-                            'replicas': None,
-                            'last_action': None,
-                            'last_logs': None,
-                        })
-                        logs['swarm']['passed'].append(responser_name)
+                    if is_error is False:
+                        try:
+                            prometheus_response = PrometheusConnect(url=f'{PROMETHEUS_HOST}:{PROMETHEUS_PORT}', disable_ssl=True)
+                            if prometheus_response.check_prometheus_connection() is False:
+                                logs['swarm']['others'].append('Prometheus check connection fail')
+                                is_error = True
+                        except:
+                            logs['swarm']['others'].append('Can\'t perform check Prometheus for connection testing')
+                            is_error = True
+                    if is_error is False:
+                        unique_id = uuid4()
+                        runner = run(
+                            private_data_dir=ANSIBLE_DATA_DIR,
+                            module='ping',
+                            inventory=ANSIBLE_INVENTORY,
+                            extravars={
+                                'username_swarm_node': ANSIBLE_SWARM_USERNAME,
+                                'password_swarm_node': ANSIBLE_SWARM_PASSWORD,
+                            },
+                            host_pattern='swarm',
+                            json_mode=True,
+                            quiet=True,
+                            ident=unique_id
+                        )
+                        error_message = None
+                        for event in runner.events:
+                            if event.get('event') == 'runner_on_unreachable':
+                                error_message = event['stdout']
+                                break
+                            if event.get('event') == 'runner_on_failed':
+                                error_message = event['stdout']
+                                break
+                        if runner.status == 'failed':
+                            rmtree(path=f'{ANSIBLE_DATA_DIR.replace('.', '')}artifacts/{unique_id}', ignore_errors=True)
+                            logs['swarm']['others'].append(error_message)
+                            is_error = True
+                    if is_error is False:
+                        for swarm_passed in swarm_passed_list:
+                            responser_name = swarm_passed.get('responser_name')
+                            responser_configuration = self.normalize_string(text=swarm_passed.get('responser_configuration'))
+                            current_nums = swarm_passed.get('current_nums')
+                            response_elasticsearch.index(index='responser-swarm', document={
+                                'responser_name': responser_name,
+                                'responser_configuration': responser_configuration,
+                                'current_nums': current_nums
+                            }, refresh='wait_for')
+                            response_elasticsearch.index(index='responser-swarm-executions', document={
+                                'responser_name': responser_name,
+                                'status': 'down',
+                                'at_time': None,
+                                'replicas': None,
+                                'last_action': None,
+                                'last_logs': None,
+                            })
+                            logs['swarm']['passed'].append(responser_name)
         return {
             'type': 'resources',
             'data': logs,

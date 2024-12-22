@@ -27,7 +27,10 @@ ENV ES_HOST="http://elasticsearch:9200" \
     RABBITMQ_MANAGEMENT_PORT=15672 \
     RABBITMQ_OPERATION_PORT=5672 \
     RABBITMQ_QUEUE_NAME="modsecurity-raw" \
+    RABBITMQ_SCALER_QNAME="swarm-scaling" \
     RABBITMQ_USERNAME="guest" \
-    RABBITMQ_PW="guest"
+    RABBITMQ_PW="guest" \
+    PROMETHEUS_HOST="prometheus" \
+    PROMETHEUS_PORT=9090
 
 CMD [ "python", "./run.py" ]

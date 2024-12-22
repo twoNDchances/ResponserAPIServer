@@ -209,22 +209,20 @@ def iptables_responser_endpoint(responser_name: str):
         })
         response_elasticsearch.update(index='responser-iptables', id=iptables_responser['_id'], doc={
             'responser_configuration': dumps({
-                {
-                    'is_enabled': False, 
-                    'target_ip_field': target_ip_field, 
-                    'is_ruthless': is_ruthless, 
-                    'limit_duration_minutes': limit_duration_minutes, 
-                    'rate_limitation': {
-                        'packet_nums': rate_limitation.get('packet_nums'), 
-                        'duration_type': rate_limitation.get('duration_type'), 
-                        'burst': rate_limitation.get('burst')
-                    }, 
-                    'block_duration_minutes': block_duration_minutes, 
-                    'advanced': {
-                        'is_enabled': is_enabled_advanced, 
-                        'threshold': threshold, 
-                        'time_window_seconds': time_window_seconds
-                    }
+                'is_enabled': False, 
+                'target_ip_field': target_ip_field, 
+                'is_ruthless': is_ruthless, 
+                'limit_duration_minutes': limit_duration_minutes, 
+                'rate_limitation': {
+                    'packet_nums': rate_limitation.get('packet_nums'), 
+                    'duration_type': rate_limitation.get('duration_type'), 
+                    'burst': rate_limitation.get('burst')
+                }, 
+                'block_duration_minutes': block_duration_minutes, 
+                'advanced': {
+                    'is_enabled': is_enabled_advanced, 
+                    'threshold': threshold, 
+                    'time_window_seconds': time_window_seconds
                 }
             })
         })
@@ -476,22 +474,20 @@ def iptables_responser_endpoint(responser_name: str):
         })
         response_elasticsearch.update(index='responser-iptables', id=iptables_responser['_id'], doc={
             'responser_configuration': dumps({
-                {
-                    'is_enabled': False, 
-                    'target_ip_field': target_ip_field, 
-                    'is_ruthless': is_ruthless, 
-                    'limit_duration_minutes': limit_duration_minutes, 
-                    'rate_limitation': {
-                        'packet_nums': rate_limitation.get('packet_nums'), 
-                        'duration_type': rate_limitation.get('duration_type'), 
-                        'burst': rate_limitation.get('burst')
-                    }, 
-                    'block_duration_minutes': block_duration_minutes, 
-                    'advanced': {
-                        'is_enabled': is_enabled_advanced, 
-                        'threshold': threshold, 
-                        'time_window_seconds': time_window_seconds
-                    }
+                'is_enabled': False, 
+                'target_ip_field': target_ip_field, 
+                'is_ruthless': is_ruthless, 
+                'limit_duration_minutes': limit_duration_minutes, 
+                'rate_limitation': {
+                    'packet_nums': rate_limitation.get('packet_nums'), 
+                    'duration_type': rate_limitation.get('duration_type'), 
+                    'burst': rate_limitation.get('burst')
+                }, 
+                'block_duration_minutes': block_duration_minutes, 
+                'advanced': {
+                    'is_enabled': is_enabled_advanced, 
+                    'threshold': threshold, 
+                    'time_window_seconds': time_window_seconds
                 }
             })
         })

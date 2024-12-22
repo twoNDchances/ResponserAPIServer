@@ -171,7 +171,6 @@ def swarm_responser_endpoint():
                         }
                         print(scaling_execution)
                         channel.basic_publish(exchange='', routing_key=RABBITMQ_SCALER_QNAME, body=dumps(scaling_execution))
-                        connection.close()
                 continue
             if swarm_execution['_source']['status'] == 'down':
                 if swarm_execution['_source']['at_time'] is not None and (swarm_execution['_source']['at_time'] + 30) > time_now:

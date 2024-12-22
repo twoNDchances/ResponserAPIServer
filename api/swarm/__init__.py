@@ -226,7 +226,6 @@ def swarm_responser_endpoint():
                 'replicas': scaling.get('up_nums') if insufficient_resources is False else up_nums
             }
             channel.basic_publish(exchange='', routing_key=RABBITMQ_SCALER_QNAME, body=dumps(scaling_execution))
-            connection.close()
     return {
         'type': 'swarm',
         'data': None,

@@ -1,4 +1,4 @@
-export ES_HOST="http://1.1.1.1:9200"
+export ES_HOST="http://103.245.236.234:9201"
 export ES_USER="elastic"
 export ES_PASS="elastic"
 export ES_MAX_RESULT=1000000000
@@ -6,7 +6,7 @@ export ES_MAX_RESULT=1000000000
 export BACKEND_HOST="0.0.0.0"
 export BACKEND_PORT=9948
 export BACKEND_DEFAULT_FIREWALL="192.168.1.15"
-export BACKEND_DEFAULT_SWARM="192.168.1.9"
+export BACKEND_DEFAULT_SWARM="192.168.1.7"
 
 export ANSIBLE_DATA_DIR="/root/Responsers/config/."
 export ANSIBLE_INVENTORY="/root/Responsers/config/hosts"
@@ -25,5 +25,5 @@ export RABBITMQ_SCALER_QNAME="swarm-scaling"
 export RABBITMQ_USERNAME="admin"
 export RABBITMQ_PW="admin"
 
-export PROMETHEUS_HOST="http://192.168.1.9"
+export PROMETHEUS_HOST="http://192.168.1.6"
 export PROMETHEUS_PORT=9090

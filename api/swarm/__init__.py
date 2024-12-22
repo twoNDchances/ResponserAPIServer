@@ -99,6 +99,14 @@ def swarm_responser_endpoint():
             final_action = 'up'
         if ram.get('type') == 'scaleDown' and cpu.get('type') == 'scaleDown':
             final_action = 'down'
+        if ram.get('type') == None and cpu.get('type') == 'scaleDown':
+            final_action = 'down'
+        if ram.get('type') == None and cpu.get('type') == 'scaleUp':
+            final_action = 'up'
+        if ram.get('type') == 'scaleDown' and cpu.get('type') == None:
+            final_action = 'down'
+        if ram.get('type') == 'scaleUp' and cpu.get('type') == None:
+            final_action = 'up'
         performlist.append({
             'real_name': chlist.get('real_name'),
             'service_name': chlist.get('service_name'),

@@ -136,6 +136,7 @@ def swarm_responser_endpoint():
     swarm = response_elasticsearch.search(index='responser-swarm', query={'match_all': {}}, size=ES_MAX_RESULT).raw['hits']['hits']
     up_nums = 0
     for pflist in performlist:
+        print(pflist)
         if pflist.get('real_name') in [container['_source']['responser_name'] for container in swarm]:
             container_configuration = [
                 container for container in swarm
@@ -159,7 +160,7 @@ def swarm_responser_endpoint():
             time_now = int(datetime.now().timestamp())
             if pflist.get('final_action') == 'down':
                 if swarm_execution['_source']['status'] == 'up':
-                    if (swarm_execution['_source']['at_time'] + 30) <= time_now:
+                    if (swarm_execution['_source']['at_time'] + 60) <= time_now:
                         scaling_execution = {
                             'service_name': pflist.get('service_name'),
                             'real_name': pflist.get('real_name'),
@@ -170,62 +171,66 @@ def swarm_responser_endpoint():
                             'auto_down_after_minutes': None
                         }
                         print(scaling_execution)
+                        print('send to mq')
                         channel.basic_publish(exchange='', routing_key=RABBITMQ_SCALER_QNAME, body=dumps(scaling_execution))
                 continue
-            if swarm_execution['_source']['status'] == 'down':
-                if swarm_execution['_source']['at_time'] is not None and (swarm_execution['_source']['at_time'] + 30) > time_now:
-                    continue
-            container_ram_limit_query = prometheus.custom_query(
-                query=f'container_spec_memory_limit_bytes{{container_label_com_docker_swarm_service_name="{pflist.get('service_name')}"}}'
-            )
-            container_cpu_limit_query = prometheus.custom_query(
-                query=f'container_spec_cpu_quota{{container_label_com_docker_swarm_service_name="{pflist.get('service_name')}"}}'
-            )
-            if container_ram_limit_query == 0 or not container_cpu_limit_query:
-                response_elasticsearch.index(index='responser-swarm-errorlogs', document={
-                    'responser_name': pflist.get('real_name'),
-                    'message': f'"{pflist.get("real_name")}" no limit set for RAM and CPU',
-                    'pattern': f'["ram_limit" = {container_ram_limit_query}, "cpu_limit" = {container_cpu_limit_query}]'
-                })
-                continue
-            container_ram_limit_result = float(container_ram_limit_query[0]['value'][1])
-            container_cpu_limit_result = float(container_cpu_limit_query[0]['value'][1]) / 100000
-            up_nums = scaling.get('up_nums') - current_nums
-            container_ram_usage = up_nums * container_ram_limit_result
-            container_cpu_usage = up_nums * container_cpu_limit_result
-            container_ram_remaining = ram_free_mb - container_ram_usage
-            container_cpu_remaining = total_idle_cores - container_cpu_usage
-            insufficient_resources = False
-            if container_ram_remaining <= 0 or container_cpu_remaining <= 0:
-                insufficient_resources = True
-                try_up_nums = [i for i in range(1, scaling.get('up_nums'))]
-                try_up_nums.reverse()
-                got_num = False
-                for num in try_up_nums:
-                    container_ram_usage = num * container_ram_limit_result
-                    container_cpu_usage = num * container_cpu_limit_result
+            if pflist.get('final_action') == 'up':
+                if swarm_execution['_source']['status'] == 'down':
+                    if swarm_execution['_source']['at_time'] is not None and (swarm_execution['_source']['at_time'] + 60) > time_now:
+                        continue
+                    container_ram_limit_query = prometheus.custom_query(
+                        query=f'container_spec_memory_limit_bytes{{container_label_com_docker_swarm_service_name="{pflist.get('service_name')}"}}'
+                    )
+                    container_cpu_limit_query = prometheus.custom_query(
+                        query=f'container_spec_cpu_quota{{container_label_com_docker_swarm_service_name="{pflist.get('service_name')}"}}'
+                    )
+                    if container_ram_limit_query == 0 or not container_cpu_limit_query:
+                        response_elasticsearch.index(index='responser-swarm-errorlogs', document={
+                            'responser_name': pflist.get('real_name'),
+                            'message': f'"{pflist.get("real_name")}" no limit set for RAM and CPU',
+                            'pattern': f'["ram_limit" = {container_ram_limit_query}, "cpu_limit" = {container_cpu_limit_query}]'
+                        })
+                        continue
+                    container_ram_limit_result = float(container_ram_limit_query[0]['value'][1])
+                    container_cpu_limit_result = float(container_cpu_limit_query[0]['value'][1]) / 100000
+                    up_nums = scaling.get('up_nums') - current_nums
+                    container_ram_usage = up_nums * container_ram_limit_result
+                    container_cpu_usage = up_nums * container_cpu_limit_result
                     container_ram_remaining = ram_free_mb - container_ram_usage
                     container_cpu_remaining = total_idle_cores - container_cpu_usage
-                    if container_ram_remaining > 0 and container_cpu_remaining > 0:
-                        got_num = True
-                        up_nums = num + current_nums
-                        break
-                if got_num is False:
-                    response_elasticsearch.index(index='responser-swarm-errorlogs', document={
-                        'responser_name': pflist.get('real_name'),
-                        'message': f'Responser of "{pflist.get("real_name")}" can\'t scale up',
-                        'pattern': 'Server resources insufficient'
-                    })
-                    continue
-            scaling_execution = {
-                'service_name': pflist.get('service_name'),
-                'real_name': pflist.get('real_name'),
-                'execution_id': swarm_execution['_id'],
-                'swarm_id': container_configuration['_id'],
-                'scaling': 'up',
-                'replicas': scaling.get('up_nums') if insufficient_resources is False else up_nums
-            }
-            channel.basic_publish(exchange='', routing_key=RABBITMQ_SCALER_QNAME, body=dumps(scaling_execution))
+                    insufficient_resources = False
+                    if container_ram_remaining <= 0 or container_cpu_remaining <= 0:
+                        insufficient_resources = True
+                        try_up_nums = [i for i in range(1, scaling.get('up_nums'))]
+                        try_up_nums.reverse()
+                        got_num = False
+                        for num in try_up_nums:
+                            container_ram_usage = num * container_ram_limit_result
+                            container_cpu_usage = num * container_cpu_limit_result
+                            container_ram_remaining = ram_free_mb - container_ram_usage
+                            container_cpu_remaining = total_idle_cores - container_cpu_usage
+                            if container_ram_remaining > 0 and container_cpu_remaining > 0:
+                                got_num = True
+                                up_nums = num + current_nums
+                                break
+                        if got_num is False:
+                            response_elasticsearch.index(index='responser-swarm-errorlogs', document={
+                                'responser_name': pflist.get('real_name'),
+                                'message': f'Responser of "{pflist.get("real_name")}" can\'t scale up',
+                                'pattern': 'Server resources insufficient'
+                            })
+                            continue
+                    scaling_execution = {
+                        'service_name': pflist.get('service_name'),
+                        'real_name': pflist.get('real_name'),
+                        'execution_id': swarm_execution['_id'],
+                        'swarm_id': container_configuration['_id'],
+                        'scaling': 'up',
+                        'replicas': scaling.get('up_nums') if insufficient_resources is False else up_nums
+                    }
+                    print(scaling_execution)
+                    print('send to mq')
+                    channel.basic_publish(exchange='', routing_key=RABBITMQ_SCALER_QNAME, body=dumps(scaling_execution))
     return {
         'type': 'swarm',
         'data': None,

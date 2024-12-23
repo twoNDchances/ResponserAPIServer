@@ -117,17 +117,17 @@ def reset_elasticsearch():
     if response_elasticsearch.indices.exists(index='responser-swarm'):
         response_elasticsearch.indices.delete(index='responser-swarm')
         response_elasticsearch.indices.create(index='responser-swarm', body=index_settings)
-        response_elasticsearch.index(index='responser-swarm', document={
-            'responser_name': 'analyzer',
-            'responser_configuration': dumps({
-                'is_enabled': True, 
-                'scaling': {
-                    'up_nums': 5, 
-                    'down_nums': 1, 
-                }
-            }),
-            'current_nums': 1
-        })
+        # response_elasticsearch.index(index='responser-swarm', document={
+        #     'responser_name': 'analyzer',
+        #     'responser_configuration': dumps({
+        #         'is_enabled': True, 
+        #         'scaling': {
+        #             'up_nums': 5, 
+        #             'down_nums': 1, 
+        #         }
+        #     }),
+        #     'current_nums': 1
+        # })
         response_elasticsearch.index(index='responser-swarm', document={
             'responser_name': 'analyzer_client',
             'responser_configuration': dumps({
@@ -161,17 +161,17 @@ def reset_elasticsearch():
             }),
             'current_nums': 1
         })
-        response_elasticsearch.index(index='responser-swarm', document={
-            'responser_name': 'receiver',
-            'responser_configuration': dumps({
-                'is_enabled': True, 
-                'scaling': {
-                    'up_nums': 7, 
-                    'down_nums': 1, 
-                }
-            }),
-            'current_nums': 1
-        })
+        # response_elasticsearch.index(index='responser-swarm', document={
+        #     'responser_name': 'receiver',
+        #     'responser_configuration': dumps({
+        #         'is_enabled': True, 
+        #         'scaling': {
+        #             'up_nums': 7, 
+        #             'down_nums': 1, 
+        #         }
+        #     }),
+        #     'current_nums': 1
+        # })
         response_elasticsearch.index(index='responser-swarm', document={
             'responser_name': 'registration_services',
             'responser_configuration': dumps({
@@ -183,17 +183,17 @@ def reset_elasticsearch():
             }),
             'current_nums': 1
         })
-        response_elasticsearch.index(index='responser-swarm', document={
-            'responser_name': 'responser',
-            'responser_configuration': dumps({
-                'is_enabled': True, 
-                'scaling': {
-                    'up_nums': 5, 
-                    'down_nums': 1, 
-                }
-            }),
-            'current_nums': 1
-        })
+        # response_elasticsearch.index(index='responser-swarm', document={
+        #     'responser_name': 'responser',
+        #     'responser_configuration': dumps({
+        #         'is_enabled': True, 
+        #         'scaling': {
+        #             'up_nums': 5, 
+        #             'down_nums': 1, 
+        #         }
+        #     }),
+        #     'current_nums': 1
+        # })
         response_elasticsearch.index(index='responser-swarm', document={
             'responser_name': 'responser_client',
             'responser_configuration': dumps({
@@ -216,29 +216,29 @@ def reset_elasticsearch():
             }),
             'current_nums': 5
         })
-        response_elasticsearch.index(index='responser-swarm', document={
-            'responser_name': 'scaler',
-            'responser_configuration': dumps({
-                'is_enabled': True, 
-                'scaling': {
-                    'up_nums': 5, 
-                    'down_nums': 1, 
-                }
-            }),
-            'current_nums': 1
-        })
+        # response_elasticsearch.index(index='responser-swarm', document={
+        #     'responser_name': 'scaler',
+        #     'responser_configuration': dumps({
+        #         'is_enabled': True, 
+        #         'scaling': {
+        #             'up_nums': 5, 
+        #             'down_nums': 1, 
+        #         }
+        #     }),
+        #     'current_nums': 1
+        # })
     
     if response_elasticsearch.indices.exists(index='responser-swarm-executions'):
         response_elasticsearch.indices.delete(index='responser-swarm-executions')
         response_elasticsearch.indices.create(index='responser-swarm-executions', body=index_settings)
-        response_elasticsearch.index(index='responser-swarm-executions', document={
-            'responser_name': 'analyzer',
-            'status': 'down',
-            'at_time': None,
-            'replicas': None,
-            'last_action': None,
-            'last_logs': None,
-        })
+        # response_elasticsearch.index(index='responser-swarm-executions', document={
+        #     'responser_name': 'analyzer',
+        #     'status': 'down',
+        #     'at_time': None,
+        #     'replicas': None,
+        #     'last_action': None,
+        #     'last_logs': None,
+        # })
         response_elasticsearch.index(index='responser-swarm-executions', document={
             'responser_name': 'analyzer_client',
             'status': 'down',
@@ -263,14 +263,14 @@ def reset_elasticsearch():
             'last_action': None,
             'last_logs': None,
         })
-        response_elasticsearch.index(index='responser-swarm-executions', document={
-            'responser_name': 'receiver',
-            'status': 'down',
-            'at_time': None,
-            'replicas': None,
-            'last_action': None,
-            'last_logs': None,
-        })
+        # response_elasticsearch.index(index='responser-swarm-executions', document={
+        #     'responser_name': 'receiver',
+        #     'status': 'down',
+        #     'at_time': None,
+        #     'replicas': None,
+        #     'last_action': None,
+        #     'last_logs': None,
+        # })
         response_elasticsearch.index(index='responser-swarm-executions', document={
             'responser_name': 'registration_services',
             'status': 'down',
@@ -279,14 +279,14 @@ def reset_elasticsearch():
             'last_action': None,
             'last_logs': None,
         })
-        response_elasticsearch.index(index='responser-swarm-executions', document={
-            'responser_name': 'responser',
-            'status': 'down',
-            'at_time': None,
-            'replicas': None,
-            'last_action': None,
-            'last_logs': None,
-        })
+        # response_elasticsearch.index(index='responser-swarm-executions', document={
+        #     'responser_name': 'responser',
+        #     'status': 'down',
+        #     'at_time': None,
+        #     'replicas': None,
+        #     'last_action': None,
+        #     'last_logs': None,
+        # })
         response_elasticsearch.index(index='responser-swarm-executions', document={
             'responser_name': 'responser_client',
             'status': 'down',
@@ -303,14 +303,14 @@ def reset_elasticsearch():
             'last_action': None,
             'last_logs': None,
         })
-        response_elasticsearch.index(index='responser-swarm-executions', document={
-            'responser_name': 'scaler',
-            'status': 'down',
-            'at_time': None,
-            'replicas': None,
-            'last_action': None,
-            'last_logs': None,
-        })
+        # response_elasticsearch.index(index='responser-swarm-executions', document={
+        #     'responser_name': 'scaler',
+        #     'status': 'down',
+        #     'at_time': None,
+        #     'replicas': None,
+        #     'last_action': None,
+        #     'last_logs': None,
+        # })
 
     if response_elasticsearch.indices.exists(index='responser-swarm-errorlogs'):
         response_elasticsearch.indices.delete(index='responser-swarm-errorlogs')

@@ -139,17 +139,17 @@ def reset_elasticsearch():
             }),
             'current_nums': 1
         })
-        response_elasticsearch.index(index='responser-swarm', document={
-            'responser_name': 'forwarder',
-            'responser_configuration': dumps({
-                'is_enabled': True, 
-                'scaling': {
-                    'up_nums': 5, 
-                    'down_nums': 1, 
-                }
-            }),
-            'current_nums': 1
-        })
+        # response_elasticsearch.index(index='responser-swarm', document={
+        #     'responser_name': 'forwarder',
+        #     'responser_configuration': dumps({
+        #         'is_enabled': True, 
+        #         'scaling': {
+        #             'up_nums': 5, 
+        #             'down_nums': 1, 
+        #         }
+        #     }),
+        #     'current_nums': 1
+        # })
         response_elasticsearch.index(index='responser-swarm', document={
             'responser_name': 'packetbeat_nginx_gateway_services',
             'responser_configuration': dumps({
@@ -247,14 +247,14 @@ def reset_elasticsearch():
             'last_action': None,
             'last_logs': None,
         })
-        response_elasticsearch.index(index='responser-swarm-executions', document={
-            'responser_name': 'forwarder',
-            'status': 'down',
-            'at_time': None,
-            'replicas': None,
-            'last_action': None,
-            'last_logs': None,
-        })
+        # response_elasticsearch.index(index='responser-swarm-executions', document={
+        #     'responser_name': 'forwarder',
+        #     'status': 'down',
+        #     'at_time': None,
+        #     'replicas': None,
+        #     'last_action': None,
+        #     'last_logs': None,
+        # })
         response_elasticsearch.index(index='responser-swarm-executions', document={
             'responser_name': 'packetbeat_nginx_gateway_services',
             'status': 'down',
